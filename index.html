@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <link rel="stylesheet" href="style.css" />
+    <script defer src="face-api.min.js"></script>
+    <title>Face Recognition</title>
+  </head>
+
+  <body>
+    <video width="720" height="400" id="video"></video>
+    <h3>Video Input</h3>
+    <input type="text" name="url" id="videoUrl" placeholder="Input video URL" />
+    <button id="playBtn">Play Video</button>
+    <button id="csvExport">export to CSV</button>
+    <script defer>
+      let infos = [];
+      let urlWithoutFaces = [];
+      window.onload = async () => {
+        await faceapi.nets.ssdMobilenetv1.loadFromUri('./models');
+
+
+        const input = document.getElementById('videoUrl');
+        const playbtn = document.getElementById('playBtn');
+        const video = document.getElementById('video');
+        const container = document.getElementById('container');
+
+        input.addEventListener('input', (e) => {
+          video.crossOrigin = 'anonymous';
+          video.src = e.target.value;
+        });
+        playbtn.addEventListener('click', () => {
+          video.play();
+        });
+        video.addEventListener('play', async function () {
+          console.log('dssddssd');
+          const canvas = await faceapi.createCanvasFromMedia(this);
+          document.body.append(canvas);
+          const displaySize = { width: this.width, height: this.height };
+          console.log('swww');
+          faceapi.matchDimensions(canvas, displaySize);
+          setInterval(async () => {
+            let time = Date.now();
+            const faces = await faceapi.detectAllFaces(this);
+            let processTime = Date.now() - time;
+            if (faces?.length) {
+              let imgObj = {
+                nbFaces: faces.length,
+                processTime: Math.round(processTime),
+                processTimeByFace: Math.round(processTime / faces.length),
+              };
+              console.table({
+                'Faces count': faces.length,
+                'Total process time': Math.round(processTime),
+                'Process time by face': Math.round(processTime / faces.length),
+              });
+              infos.push(imgObj);
+            }
+            const resizedFaces = faceapi.resizeResults(faces, displaySize);
+            canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+            faceapi.draw.drawDetections(canvas, resizedFaces);
+          }, 100);
+        });
+      };
+
+      // load the models
+    </script>
+  </body>
+</html>
